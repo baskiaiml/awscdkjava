@@ -5,6 +5,11 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 // import software.amazon.awscdk.Duration;
 // import software.amazon.awscdk.services.sqs.Queue;
+import software.amazon.awscdk.services.ec2.Vpc;
+import software.amazon.awscdk.services.ecs.Cluster;
+import software.amazon.awscdk.services.ecs.ContainerImage;
+import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedFargateService;
+import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedTaskImageOptions;
 
 public class AwscdkjavaStack extends Stack {
     public AwscdkjavaStack(final Construct scope, final String id) {
@@ -14,11 +19,20 @@ public class AwscdkjavaStack extends Stack {
     public AwscdkjavaStack(final Construct scope, final String id, final StackProps props) {
         super(scope, id, props);
 
-        // The code that defines your stack goes here
+        Vpc vpc = Vpc.Builder.create(this, "MyVpc").maxAzs(3).build();
 
-        // example resource
-        // final Queue queue = Queue.Builder.create(this, "AwscdkjavaQueue")
-        //         .visibilityTimeout(Duration.seconds(300))
-        //         .build();
+        Cluster cluster = Cluster.Builder.create(this, "MyCluster")
+                .vpc(vpc).build();
+
+        ApplicationLoadBalancedFargateService.Builder.create(this, "MyFargateService")
+                .cluster(cluster)
+                .cpu(512)
+                .desiredCount(6)
+                .taskImageOptions(
+                       ApplicationLoadBalancedTaskImageOptions.builder()
+                               .image(ContainerImage
+                                       .fromRegistry("amazon/amazon-ecs-sample"))
+                               .build()).memoryLimitMiB(2048)
+                .publicLoadBalancer(true).build();
     }
 }
